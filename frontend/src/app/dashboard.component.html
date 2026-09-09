@@ -1,0 +1,526 @@
+<div class="page-heading">
+  <div>
+    <span class="eyebrow">{{
+      isTeacher() ? "ESPACIO DOCENTE" : "ESPACIO DEL ALUMNADO"
+    }}</span>
+    <h1>Mis trabajos</h1>
+    <p>
+      {{
+        isTeacher()
+          ? "Organiza los equipos y acompaña su evaluación."
+          : "Valora tu aportación y la de tus compañeros."
+      }}
+    </p>
+  </div>
+  @if (isTeacher()) {
+    <div class="actions">
+      <button class="button secondary" (click)="openClass()">
+        Gestionar clases</button
+      ><button
+        class="button"
+        (click)="openWork()"
+        [disabled]="!data().classes.length"
+      >
+        + Nuevo trabajo
+      </button>
+    </div>
+  }
+</div>
+@if (loading()) {
+  <p role="status">Cargando trabajos…</p>
+} @else if (isTeacher()) {
+  <div class="stats">
+    <div>
+      <span>Trabajos</span><strong>{{ data().works.length }}</strong>
+    </div>
+    <div>
+      <span>Equipos</span><strong>{{ teams().length }}</strong>
+    </div>
+    <div>
+      <span>Evaluaciones recibidas</span
+      ><strong
+        >{{ submissions() }} <small>/ {{ expected() }}</small></strong
+      >
+    </div>
+  </div>
+}
+
+@if (panel() === "class") {
+  <section class="editor" aria-labelledby="class-title">
+    <div class="section-heading">
+      <h2 id="class-title">Clases</h2>
+      <button class="text-button" (click)="panel.set(null)">Cerrar</button>
+    </div>
+    <form (ngSubmit)="saveClass()" #classEditor="ngForm" class="inline-form">
+      <label
+        >Nombre de la clase<input
+          name="className"
+          [(ngModel)]="classForm.name"
+          required
+          maxlength="120"
+          placeholder="Ej. 2.º Desarrollo de Aplicaciones Web"
+      /></label>
+      <button class="button" [disabled]="classEditor.invalid || busy()">
+        {{ classForm.id ? "Guardar cambios" : "Crear clase" }}
+      </button>
+      @if (classForm.id) {
+        <button type="button" class="button secondary" (click)="openClass()">
+          Nueva clase
+        </button>
+      }
+    </form>
+    <ul class="plain-list">
+      @for (item of data().classes; track item.id) {
+        <li>
+          <span>{{ item.name }}</span
+          ><span class="actions"
+            ><button class="text-button" (click)="openClass(item)">
+              Editar</button
+            ><button
+              class="text-button danger"
+              [disabled]="busy()"
+              (click)="remove('/classes/' + item.id, item.name)"
+            >
+              Eliminar
+            </button></span
+          >
+        </li>
+      } @empty {
+        <li>Todavía no hay clases. Crea la primera para añadir un trabajo.</li>
+      }
+    </ul>
+  </section>
+}
+
+@if (panel() === "work") {
+  <section class="editor" aria-labelledby="work-title">
+    <div class="section-heading">
+      <h2 id="work-title">
+        {{ workForm.id ? "Editar trabajo" : "Nuevo trabajo" }}
+      </h2>
+      <button class="text-button" (click)="panel.set(null)">Cancelar</button>
+    </div>
+    <form (ngSubmit)="saveWork()" #workEditor="ngForm" class="form-grid">
+      <label
+        >Clase<select
+          name="classroom"
+          [(ngModel)]="workForm.classroom_id"
+          required
+          [disabled]="!!workForm.id"
+        >
+          @for (item of data().classes; track item.id) {
+            <option [ngValue]="item.id">{{ item.name }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Fecha límite (tu hora local)<input
+          type="datetime-local"
+          name="deadline"
+          [(ngModel)]="workForm.deadline"
+          required
+      /></label>
+      <label class="full"
+        >Título<input
+          name="title"
+          [(ngModel)]="workForm.title"
+          required
+          maxlength="160"
+      /></label>
+      <label class="full"
+        >Indicaciones<textarea
+          name="description"
+          [(ngModel)]="workForm.description"
+          maxlength="4000"
+          rows="3"
+        ></textarea>
+      </label>
+      <div class="full">
+        <button class="button" [disabled]="workEditor.invalid || busy()">
+          Guardar trabajo
+        </button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (isTeacher()) {
+  <div class="workspace">
+    <aside class="work-list" aria-label="Trabajos">
+      <h2>
+        Trabajos <span class="count">{{ data().works.length }}</span>
+      </h2>
+      @for (work of data().works; track work.id) {
+        <button
+          class="work-tab"
+          [class.selected]="selectedId() === work.id"
+          (click)="selectedId.set(work.id); panel.set(null)"
+        >
+          <span class="eyebrow">{{ work.classroom_name }}</span
+          ><strong>{{ work.title }}</strong
+          ><span
+            >{{ work.deadline | date: "dd/MM/yyyy" }} ·
+            {{ work.teams.length }} equipos</span
+          >
+          <span class="badge" [class.green]="work.published">{{
+            work.published
+              ? "Publicado"
+              : work.closed || work.expired
+                ? "Cerrado"
+                : "En curso"
+          }}</span>
+        </button>
+      } @empty {
+        <p class="muted">Crea una clase y tu primer trabajo para empezar.</p>
+      }
+    </aside>
+    <section class="work-detail">
+      @if (selected(); as work) {
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">{{ work.classroom_name }}</span>
+            <h2>{{ work.title }}</h2>
+          </div>
+          <button
+            class="button secondary"
+            (click)="export()"
+            [disabled]="busy()"
+          >
+            ↓ Exportar XLSX
+          </button>
+        </div>
+        <p class="preserve-lines">{{ work.description }}</p>
+        <p class="muted">
+          Fecha límite: {{ work.deadline | date: "dd/MM/yyyy, HH:mm" }} · Hora
+          local
+        </p>
+        <div class="toolbar">
+          @if (work.published) {
+            <span class="badge green">Resultados publicados</span
+            ><button
+              class="button secondary"
+              (click)="state('unpublish')"
+              [disabled]="busy()"
+            >
+              Retirar publicación
+            </button>
+          } @else {
+            <button class="button" (click)="openTeam()">+ Añadir equipo</button>
+            <button
+              class="button secondary"
+              (click)="state('publish')"
+              [disabled]="busy()"
+            >
+              Publicar resultados
+            </button>
+            <button
+              class="text-button"
+              (click)="state(work.closed ? 'reopen' : 'close')"
+              [disabled]="busy()"
+            >
+              {{ work.closed ? "Reabrir" : "Cerrar plazo" }}
+            </button>
+            <button class="text-button" (click)="openWork(work)">
+              Editar trabajo
+            </button>
+            <button
+              class="text-button danger"
+              (click)="remove('/works/' + work.id, work.title)"
+              [disabled]="busy()"
+            >
+              Eliminar
+            </button>
+          }
+        </div>
+        @if (work.expired && !work.closed && !work.published) {
+          <p class="message info">
+            El plazo ha vencido. Edita la fecha límite para permitir nuevas
+            respuestas.
+          </p>
+        }
+        @if (panel() === "team") {
+          <section class="editor" aria-labelledby="team-title">
+            <div class="section-heading">
+              <h3 id="team-title">
+                {{ teamForm.id ? "Editar equipo" : "Nuevo equipo" }}
+              </h3>
+              <button class="text-button" (click)="panel.set(null)">
+                Cancelar
+              </button>
+            </div>
+            <form
+              (ngSubmit)="saveTeam()"
+              #teamEditor="ngForm"
+              class="form-grid"
+            >
+              <label
+                >Nombre del equipo<input
+                  name="teamName"
+                  [(ngModel)]="teamForm.name"
+                  required
+                  maxlength="120"
+              /></label>
+              <label
+                >Nota grupal (opcional)<input
+                  type="number"
+                  name="grade"
+                  [(ngModel)]="teamForm.grade"
+                  min="0"
+                  max="10"
+                  step="0.01"
+              /></label>
+              <label class="full"
+                >Correos de los integrantes<textarea
+                  name="emails"
+                  [(ngModel)]="teamForm.emails"
+                  required
+                  rows="4"
+                  placeholder="Un correo gmail.com por línea"
+                ></textarea
+                ><small
+                  >Entre 2 y 50 alumnos. No se podrán cambiar cuando haya
+                  respuestas.</small
+                ></label
+              >
+              <div class="full">
+                <button
+                  class="button"
+                  [disabled]="teamEditor.invalid || busy()"
+                >
+                  Guardar equipo
+                </button>
+              </div>
+            </form>
+          </section>
+        }
+        @for (team of work.teams; track team.id) {
+          <article class="team-card">
+            <div class="section-heading">
+              <div>
+                <h3>
+                  {{ team.name }}
+                  @if (hasMr(team)) {
+                    <span class="badge amber">MR</span>
+                  }
+                </h3>
+                <span class="muted"
+                  >{{ team.members.length }} integrantes ·
+                  {{ team.budget }} puntos por persona</span
+                >
+              </div>
+              <span class="badge" [class.green]="team.results?.complete"
+                >{{ team.submitted }} /
+                {{ team.members.length }} respuestas</span
+              >
+            </div>
+            <div class="team-meta">
+              <span
+                >Nota grupal
+                <strong>{{
+                  team.grade === null
+                    ? "Sin asignar"
+                    : (team.grade | number: "1.2-2")
+                }}</strong></span
+              ><span>{{
+                team.results?.ready ? "Cálculo completo" : "Resultado pendiente"
+              }}</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <caption class="sr-only">
+                  Resultados del equipo
+                  {{
+                    team.name
+                  }}
+                </caption>
+                <thead>
+                  <tr>
+                    <th>Integrante</th>
+                    <th>Puntos</th>
+                    <th>% nota</th>
+                    <th>Nota individual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of team.results?.rows; track row.user_id) {
+                    <tr>
+                      <td>
+                        <strong>{{ row.name }}</strong
+                        ><small>{{ row.email }}</small>
+                      </td>
+                      <td>{{ row.points }}</td>
+                      <td>
+                        {{
+                          row.percentage === null
+                            ? "Pendiente"
+                            : (row.percentage | number: "1.2-2") + "%"
+                        }}
+                      </td>
+                      <td class="grade">
+                        {{
+                          row.grade === null
+                            ? "—"
+                            : (row.grade | number: "1.2-2")
+                        }}
+                        @if (row.mh) {
+                          <span
+                            class="badge blue"
+                            [title]="'Nota antes del límite: ' + row.raw_grade"
+                            >MH</span
+                          >
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <details class="review">
+              <summary>Ver repartos y comentarios confidenciales</summary>
+              @for (
+                evaluation of team.evaluations;
+                track evaluation.evaluator_id
+              ) {
+                <div class="review-row">
+                  <strong>{{
+                    memberName(team, evaluation.evaluator_id)
+                  }}</strong>
+                  <p>
+                    @for (member of team.members; track member.id) {
+                      <span class="allocation-chip"
+                        >{{ member.name }}:
+                        {{ evaluation.allocations[member.id] }}</span
+                      >
+                    }
+                  </p>
+                  @if (evaluation.warnings.length) {
+                    <p class="warning-text">
+                      MR · {{ evaluation.warnings.join(" ") }}
+                    </p>
+                  }
+                  <p class="preserve-lines">
+                    {{ evaluation.comment || "Sin comentarios." }}
+                  </p>
+                  <small
+                    >Actualizado:
+                    {{
+                      evaluation.updated_at | date: "dd/MM/yyyy HH:mm"
+                    }}</small
+                  >
+                </div>
+              } @empty {
+                <p>Todavía no hay respuestas.</p>
+              }
+            </details>
+            <div class="team-actions">
+              <button class="text-button" (click)="copy(team)">
+                Copiar enlace</button
+              ><button
+                class="text-button"
+                (click)="invite(team)"
+                [disabled]="busy() || work.closed || work.expired"
+              >
+                Enviar por correo
+              </button>
+              @if (!work.published) {
+                <button class="text-button" (click)="openTeam(team)">
+                  Editar equipo</button
+                ><button
+                  class="text-button danger"
+                  (click)="remove('/teams/' + team.id, team.name)"
+                  [disabled]="busy()"
+                >
+                  Eliminar
+                </button>
+              }
+            </div>
+            <label class="link-field"
+              >Enlace de acceso<input readonly [value]="team.link"
+            /></label>
+          </article>
+        } @empty {
+          <div class="empty">
+            <h3>El trabajo empieza con un equipo</h3>
+            <p>Añade sus integrantes y comparte el enlace de evaluación.</p>
+          </div>
+        }
+        <p class="legend">
+          <strong>MR</strong> Mal repartido: ceros, todos los puntos a una
+          persona o reparto igualitario. <strong>MH</strong> Matrícula de Honor:
+          cálculo superior a 10. Las advertencias no penalizan la nota.
+        </p>
+      } @else {
+        <div class="empty">
+          <span class="eyebrow">TODO PREPARADO</span>
+          <h2>Organiza tu primera coevaluación</h2>
+          <p>
+            Empieza creando una clase. Después podrás añadir trabajos y equipos.
+          </p>
+        </div>
+      }
+    </section>
+  </div>
+} @else {
+  <div class="student-grid">
+    @for (work of data().works; track work.id) {
+      @for (team of work.teams; track team.id) {
+        <article class="team-card student-card">
+          <span class="eyebrow">{{ work.classroom_name }}</span>
+          <h2>{{ work.title }}</h2>
+          <p>{{ team.name }} · {{ team.members.length }} integrantes</p>
+          <p class="muted">
+            Hasta {{ work.deadline | date: "dd/MM/yyyy HH:mm" }}
+          </p>
+          @if (team.my_result; as result) {
+            <div class="result-score">
+              <span>Tu nota individual</span
+              ><strong
+                >{{ result.grade | number: "1.2-2" }}
+                <small>/ 10</small></strong
+              >
+              @if (result.mh) {
+                <span class="badge blue">MH · Matrícula de Honor</span>
+              }
+            </div>
+            <p>
+              {{ result.percentage | number: "1.2-2" }}% de la nota grupal ({{
+                team.grade | number: "1.2-2"
+              }}).
+            </p>
+          } @else {
+            <span class="badge" [class.green]="!!team.own_evaluation">{{
+              team.own_evaluation ? "Evaluación enviada" : "Sin enviar"
+            }}</span>
+            <p>
+              {{
+                work.closed || work.expired
+                  ? "Plazo cerrado. Resultados pendientes de publicación."
+                  : "Reparte " +
+                    team.budget +
+                    " puntos, incluido tu propio trabajo."
+              }}
+            </p>
+          }
+          <a class="button" [routerLink]="['/evaluar', team.token]"
+            >{{
+              work.closed || work.expired || work.published
+                ? "Consultar mi evaluación"
+                : team.own_evaluation
+                  ? "Revisar mi reparto"
+                  : "Evaluar equipo"
+            }}
+            →</a
+          >
+        </article>
+      }
+    } @empty {
+      <div class="empty">
+        <h2>Todavía no tienes trabajos asignados</h2>
+        <p>
+          Cuando tu docente te añada a un equipo, lo verás aquí. Comprueba que
+          has accedido con la cuenta que le facilitaste.
+        </p>
+      </div>
+    }
+  </div>
+}

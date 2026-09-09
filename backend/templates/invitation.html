@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="es">
+  <body style="font-family: 'Segoe UI', sans-serif; color: #18304d; background: white;">
+    <h1 style="color: #0f4285;">Autoevaluación y coevaluación</h1>
+    <p>Hola, {{ name }}:</p>
+    <p>Ya puedes evaluar el trabajo «{{ team.work.title }}» con tu equipo {{ team.name }}.</p>
+    <p>Reparte {{ team.members | length * 3 }} puntos entre todos los integrantes, incluido tú.</p>
+    <p><a href="{{ link }}">Abrir mi evaluación</a></p>
+    <p>Accede con la cuenta de Google a la que se ha enviado este correo.</p>
+    <p>Fecha límite: {{ deadline }} (hora de Madrid).</p>
+    <p>Tu reparto y tus comentarios solo serán visibles para el profesorado autorizado.</p>
+  </body>
+</html>

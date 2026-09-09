@@ -1,0 +1,11 @@
+Hola, {{ name }}:
+
+Ya puedes evaluar el trabajo «{{ team.work.title }}» con tu equipo {{ team.name }}.
+Reparte {{ team.members | length * 3 }} puntos entre todos, incluido tú.
+
+Abre tu evaluación: {{ link }}
+
+Accede con la cuenta de Google a la que se ha enviado este correo.
+Fecha límite: {{ deadline }} (hora de Madrid).
+
+Tu reparto y tus comentarios solo serán visibles para el profesorado autorizado.

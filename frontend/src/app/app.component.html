@@ -1,0 +1,132 @@
+<a class="skip-link" href="#main">Saltar al contenido</a>
+<header class="topbar">
+  <a class="brand" routerLink="/" aria-label="Cuatrovientos, inicio">
+    <span class="brand-mark" aria-hidden="true">cv</span>
+    <span
+      >cuatrovientos<span class="brand-caption"
+        >AUTOEVALUACIÓN Y COEVALUACIÓN</span
+      ></span
+    >
+  </a>
+  @if (api.user(); as user) {
+    <nav aria-label="Navegación principal">
+      <a routerLink="/">Mis trabajos</a>
+      @if (user.role === "admin") {
+        <a routerLink="/usuarios">Usuarios</a>
+      }
+    </nav>
+    <div class="account">
+      <span
+        >{{ user.name
+        }}<small>{{
+          user.role === "student"
+            ? "Alumno/a"
+            : user.role === "admin"
+              ? "Administrador"
+              : "Docente"
+        }}</small></span
+      >
+      <button class="button ghost" (click)="api.logout()">Salir</button>
+    </div>
+  }
+</header>
+<main id="main" class="shell">
+  @if (api.error()) {
+    <div class="message error" role="alert">
+      {{ api.error()
+      }}<button
+        class="text-button"
+        (click)="api.error.set('')"
+        aria-label="Cerrar error"
+      >
+        Cerrar
+      </button>
+    </div>
+  }
+  @if (api.notice()) {
+    <div class="message success" role="status">
+      {{ api.notice()
+      }}<button
+        class="text-button"
+        (click)="api.notice.set('')"
+        aria-label="Cerrar aviso"
+      >
+        Cerrar
+      </button>
+    </div>
+  }
+  @if (!api.ready()) {
+    <div class="empty">
+      <p>Conectando con la aplicación…</p>
+      <button class="button secondary" (click)="api.session()">
+        Reintentar conexión
+      </button>
+    </div>
+  } @else if (!api.user()) {
+    <section class="login-grid">
+      <div class="login-intro">
+        <span class="eyebrow">APRENDER EN EQUIPO</span>
+        <h1>Cada aportación<br />cuenta.</h1>
+        <p class="lead">
+          Un espacio para valorar tu trabajo y el de tu equipo con
+          responsabilidad.
+        </p>
+        <div class="steps">
+          <div>
+            <span>01</span>
+            <p>
+              <strong>Reflexiona</strong>Piensa en la aportación de cada
+              integrante, incluida la tuya.
+            </p>
+          </div>
+          <div>
+            <span>02</span>
+            <p>
+              <strong>Reparte</strong>Asigna los puntos disponibles y añade un
+              comentario si lo necesitas.
+            </p>
+          </div>
+          <div>
+            <span>03</span>
+            <p>
+              <strong>Consulta</strong>Conoce tu nota individual cuando el
+              docente publique los resultados.
+            </p>
+          </div>
+        </div>
+      </div>
+      <section class="login-card" aria-labelledby="access-title">
+        <span class="eyebrow">TU ESPACIO DE EVALUACIÓN</span>
+        <h2 id="access-title">Bienvenido/a</h2>
+        <p>Accede con tu cuenta de Google para ver tus trabajos.</p>
+        @if (authError) {
+          <div class="message error" role="alert">
+            {{
+              authError === "configuration"
+                ? "El acceso con Google todavía no está configurado en el servidor."
+                : "No se pudo iniciar sesión. Usa una cuenta autorizada y activa, o contacta con el administrador."
+            }}
+          </div>
+        }
+        <a class="button google-button" [href]="loginUrl"
+          ><span aria-hidden="true">G</span> Continuar con Google
+          <span aria-hidden="true">→</span></a
+        >
+        <div class="access-domains">
+          <p><strong>Alumnado</strong> Cuentas gmail.com</p>
+          <p><strong>Profesorado</strong> Cuentas cuatrovientos.org</p>
+        </div>
+        <p class="privacy-note">
+          Evaluaciones confidenciales. Solo tú y el profesorado autorizado
+          podéis ver tu reparto.
+        </p>
+      </section>
+    </section>
+  } @else {
+    <router-outlet />
+  }
+</main>
+<footer class="footer">
+  <span>Cuatrovientos · Trabajo en equipo</span
+  ><span>Respeto. Responsabilidad. Participación.</span>
+</footer>

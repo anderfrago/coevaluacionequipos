@@ -1,0 +1,147 @@
+<a class="back-link" routerLink="/">← Volver a mis trabajos</a>
+@if (loading()) {
+  <p role="status">Cargando evaluación…</p>
+}
+@if (team(); as team) {
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow"
+        >{{ work()?.classroom_name }} · {{ team.name }}</span
+      >
+      <h1>{{ work()?.title }}</h1>
+      <p>
+        Tu trabajo también cuenta. Evalúa a todos los integrantes, incluido tú.
+      </p>
+    </div>
+    <span class="badge" [class.green]="saved()">{{
+      locked() ? "Plazo cerrado" : saved() ? "Guardado" : "Sin guardar"
+    }}</span>
+  </div>
+  <div class="evaluation-layout">
+    <form (ngSubmit)="save()" #evaluationForm="ngForm" class="evaluation-card">
+      <div class="section-heading">
+        <h2>Reparte los puntos</h2>
+        <span>{{ team.members.length }} integrantes</span>
+      </div>
+      <p class="preserve-lines">{{ work()?.description }}</p>
+      <p class="muted">
+        Usa números enteros de 0 a {{ team.budget }}. El total debe sumar
+        {{ team.budget }}.
+      </p>
+      @for (member of team.members; track member.id; let i = $index) {
+        <div class="person-allocation">
+          <span class="avatar" aria-hidden="true">{{ i + 1 }}</span
+          ><label [for]="'points-' + member.id"
+            ><strong>{{ member.name }}</strong>
+            @if (member.id === api.user()?.id) {
+              <small>Tú · Autoevaluación</small>
+            } @else {
+              <small>Coevaluación</small>
+            }</label
+          ><input
+            type="number"
+            [id]="'points-' + member.id"
+            [name]="'points-' + member.id"
+            [ngModel]="allocations()[member.id]"
+            (ngModelChange)="setPoints(member.id, $event)"
+            min="0"
+            [max]="team.budget"
+            step="1"
+            required
+            [disabled]="locked()"
+          /><span class="muted">pts.</span>
+        </div>
+      }
+      <label class="comment-label"
+        >Comentario (opcional)<textarea
+          name="comment"
+          [(ngModel)]="comment"
+          (ngModelChange)="saved.set(false)"
+          rows="4"
+          maxlength="3000"
+          [disabled]="locked()"
+          placeholder="Explica el reparto o comparte una reflexión sobre el trabajo en equipo."
+        ></textarea
+        ><small
+          >Solo tú y el profesorado autorizado podréis leerlo. Máximo 3000
+          caracteres.</small
+        ></label
+      >
+      @if (!locked()) {
+        <div class="actions">
+          <button
+            class="button"
+            [disabled]="!valid() || evaluationForm.invalid || busy()"
+          >
+            {{ busy() ? "Guardando…" : "Guardar evaluación" }}</button
+          ><span class="muted">Puedes editarla hasta el cierre.</span>
+        </div>
+      } @else {
+        <p class="message info">
+          El plazo está cerrado. Tu reparto ya no se puede modificar.
+        </p>
+      }
+    </form>
+    <aside class="evaluation-aside">
+      <div class="budget-card">
+        <span>Puntos disponibles</span><strong>{{ team.budget }}</strong>
+        <div class="budget-line">
+          <span>Repartidos</span><b>{{ total() }}</b>
+        </div>
+        <div class="budget-line" [class.warning-text]="remaining() !== 0">
+          <span>{{ remaining() < 0 ? "Puntos de más" : "Por repartir" }}</span
+          ><b>{{ remaining() < 0 ? -remaining() : remaining() }}</b>
+        </div>
+        <progress
+          [value]="total()"
+          [max]="team.budget"
+          aria-label="Puntos repartidos"
+        ></progress>
+        <p aria-live="polite">
+          {{
+            valid()
+              ? "El total de puntos es correcto."
+              : "Ajusta el reparto antes de guardar."
+          }}
+        </p>
+      </div>
+      @if (warnings().length) {
+        <div class="warning-card">
+          <span class="badge amber">MR · Mal repartido</span>
+          @for (warning of warnings(); track warning) {
+            <p>{{ warning }}</p>
+          }
+          <small
+            >Es una advertencia. Puedes guardar si el total es correcto; no se
+            aplica una penalización automática.</small
+          >
+        </div>
+      }
+      <div class="deadline-card">
+        <strong>Fecha límite</strong>
+        <p>{{ work()?.deadline | date: "dd/MM/yyyy, HH:mm" }}</p>
+        <small>Hora local de tu dispositivo</small>
+      </div>
+      @if (team.my_result; as result) {
+        <div class="result-score">
+          <span>Tu nota individual</span
+          ><strong
+            >{{ result.grade | number: "1.2-2" }} <small>/ 10</small></strong
+          >
+          <p>{{ result.percentage | number: "1.2-2" }}% de la nota grupal.</p>
+          @if (result.mh) {
+            <span class="badge blue">MH · Matrícula de Honor</span>
+          }
+        </div>
+      }
+    </aside>
+  </div>
+} @else if (!loading()) {
+  <div class="empty">
+    <h1>No se pudo abrir esta evaluación</h1>
+    <p>
+      Comprueba que has iniciado sesión como alumno con la cuenta asignada al
+      equipo.
+    </p>
+  </div>
+}

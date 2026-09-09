@@ -1,0 +1,117 @@
+@if (api.user()?.role !== "admin") {
+  <div class="empty">
+    <h1>Acceso restringido</h1>
+    <p>La gestión de usuarios está reservada al administrador.</p>
+  </div>
+} @else {
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">ADMINISTRACIÓN</span>
+      <h1>Usuarios</h1>
+      <p>Gestiona el acceso de alumnos y docentes.</p>
+    </div>
+    <button class="button" (click)="edit()">+ Nuevo usuario</button>
+  </div>
+  @if (editing()) {
+    <section class="editor">
+      <div class="section-heading">
+        <h2>{{ form.id ? "Editar usuario" : "Nuevo usuario" }}</h2>
+        <button class="text-button" (click)="editing.set(false)">
+          Cancelar
+        </button>
+      </div>
+      <form (ngSubmit)="save()" #userEditor="ngForm" class="form-grid">
+        <label
+          >Nombre<input
+            name="name"
+            [(ngModel)]="form.name"
+            required
+            maxlength="120"
+        /></label>
+        <label
+          >Correo de Google<input
+            type="email"
+            name="email"
+            [(ngModel)]="form.email"
+            required
+            email
+            maxlength="254"
+        /></label>
+        <label
+          >Rol<select name="role" [(ngModel)]="form.role">
+            <option value="student">Alumno/a · gmail.com</option>
+            <option value="teacher">Docente · cuatrovientos.org</option>
+            <option value="admin">Administrador · cuenta designada</option>
+          </select></label
+        >
+        <label class="checkbox-label"
+          ><input type="checkbox" name="active" [(ngModel)]="form.active" />
+          Cuenta activa</label
+        >
+        <p class="full muted">
+          El rol debe corresponder al dominio. Cambiar el correo permite acceder
+          a este historial desde la nueva cuenta de Google.
+        </p>
+        <div class="full">
+          <button class="button" [disabled]="userEditor.invalid || busy()">
+            Guardar usuario
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+  @if (loading()) {
+    <p role="status">Cargando usuarios…</p>
+  } @else {
+    <div class="table-scroll user-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users(); track user.id) {
+            <tr>
+              <td>
+                <strong>{{ user.name }}</strong>
+              </td>
+              <td>{{ user.email }}</td>
+              <td>
+                {{
+                  user.role === "admin"
+                    ? "Administrador"
+                    : user.role === "teacher"
+                      ? "Docente"
+                      : "Alumno/a"
+                }}
+              </td>
+              <td>
+                <span class="badge" [class.green]="user.active">{{
+                  user.active ? "Activo" : "Desactivado"
+                }}</span>
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="text-button" (click)="edit(user)">
+                    Editar</button
+                  ><button
+                    class="text-button danger"
+                    (click)="remove(user)"
+                    [disabled]="busy() || user.id === api.user()?.id"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

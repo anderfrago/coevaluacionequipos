@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+instance/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.npm-cache/
+*.zip
+.ruff_cache/
