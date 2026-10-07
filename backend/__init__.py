@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, request, send_from_directory, session
+from flask import Flask, g, jsonify, render_template, request, send_from_directory, session
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from werkzeug.exceptions import HTTPException
@@ -33,6 +33,18 @@ def create_app(test_config=None):
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         MAX_CONTENT_LENGTH=128 * 1024,
         ADMIN_EMAIL=os.getenv("ADMIN_EMAIL", "ander_frago@cuatrovientos.org").lower(),
+        TEACHER_DOMAIN=os.getenv("TEACHER_DOMAIN", "cuatrovientos.org").strip().lower(),
+        STUDENT_DOMAINS={
+            domain.strip().lower()
+            for domain in os.getenv("STUDENT_DOMAINS", "cuatrovientos.org,gmail.com").split(",")
+            if domain.strip()
+        },
+        RETENTION_DAYS=os.getenv("RETENTION_DAYS", ""),
+        PRIVACY_CONTROLLER=os.getenv("PRIVACY_CONTROLLER", ""),
+        PRIVACY_CONTACT=os.getenv("PRIVACY_CONTACT", ""),
+        PRIVACY_LEGAL_BASIS=os.getenv("PRIVACY_LEGAL_BASIS", ""),
+        PRIVACY_RETENTION=os.getenv("PRIVACY_RETENTION", ""),
+        PRIVACY_PROVIDERS=os.getenv("PRIVACY_PROVIDERS", ""),
         GOOGLE_CLIENT_ID=os.getenv("GOOGLE_CLIENT_ID", ""),
         GOOGLE_CLIENT_SECRET=os.getenv("GOOGLE_CLIENT_SECRET", ""),
         SMTP_HOST=os.getenv("SMTP_HOST", "smtp.gmail.com"),
@@ -43,6 +55,8 @@ def create_app(test_config=None):
     )
     if test_config:
         app.config.update(test_config)
+    if app.config["BASE_URL"].startswith("https://") and not app.config["SESSION_COOKIE_SECURE"]:
+        raise RuntimeError("Con HTTPS debes configurar COOKIE_SECURE=true.")
     if (
         not app.config["SECRET_KEY"]
         or len(app.config["SECRET_KEY"]) < 32
@@ -52,17 +66,23 @@ def create_app(test_config=None):
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     db.init_app(app)
 
-    from .auth import auth, configure_oauth
+    from .auth import auth, configure_oauth, role_allowed
+    from .retention import register_commands
     from .routes import api
 
     configure_oauth(app)
     app.register_blueprint(auth)
     app.register_blueprint(api, url_prefix="/api")
+    register_commands(app)
 
     @app.before_request
     def security():
         g.user = db.session.get(User, session.get("user_id")) if session.get("user_id") else None
-        if g.user and (not g.user.active or session.get("auth_version") != g.user.auth_version):
+        if g.user and (
+            not g.user.active
+            or session.get("auth_version") != g.user.auth_version
+            or not role_allowed(g.user.email, g.user.role)
+        ):
             session.clear()
             g.user = None
         if request.path.startswith("/api/") and request.method not in ("GET", "HEAD", "OPTIONS"):
@@ -75,7 +95,7 @@ def create_app(test_config=None):
     def headers(response):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "same-origin"
+        response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
@@ -106,6 +126,10 @@ def create_app(test_config=None):
         if path and "." in path:
             return jsonify(error="Archivo no encontrado."), 404
         return send_from_directory(folder, "index.html")
+
+    @app.get("/privacidad")
+    def privacy():
+        return render_template("privacy.html")
 
     @app.cli.command("init-db")
     def init_db():

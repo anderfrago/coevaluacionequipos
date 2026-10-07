@@ -22,22 +22,20 @@ def configure_oauth(app):
     app.extensions["google_oauth"] = oauth
 
 
-def role_for(email):
+def role_allowed(email, role):
+    """Domain policy restricts explicit roles; it never grants a role."""
     if email == current_app.config["ADMIN_EMAIL"]:
-        return "admin"
+        return role == "admin"
     domain = email.rsplit("@", 1)[-1]
-    if domain == "cuatrovientos.org":
-        return "teacher"
-    if domain == "gmail.com":
-        return "student"
-    abort(400, "Solo se admiten cuentas gmail.com y cuatrovientos.org.")
+    if role == "teacher":
+        return domain == current_app.config["TEACHER_DOMAIN"]
+    return role == "student" and domain in current_app.config["STUDENT_DOMAINS"]
 
 
 def user_from_identity(info):
     email = str(info.get("email", "")).strip().lower()
     if info.get("email_verified") is not True or not info.get("sub"):
         abort(403, "Google debe verificar tu dirección de correo.")
-    inferred_role = role_for(email)
     user = db.session.execute(
         db.select(User).filter_by(google_sub=info["sub"])
     ).scalar_one_or_none()
@@ -48,8 +46,14 @@ def user_from_identity(info):
     if user and (not user.active or user.google_sub not in (None, info["sub"])):
         abort(403, "Cuenta desactivada o identidad no autorizada.")
     if user is None:
-        user = User(email=email, name=str(info.get("name") or email)[:120], role=inferred_role)
-        db.session.add(user)
+        if email != current_app.config["ADMIN_EMAIL"]:
+            abort(403, "Tu cuenta debe ser autorizada antes de iniciar sesión.")
+        user = User(email=email, name=str(info.get("name") or email)[:120], role="admin")
+    if not role_allowed(email, user.role):
+        abort(403, "Esta cuenta no cumple la política de acceso del centro.")
+    if user.role in ("teacher", "admin") and info.get("hd") != current_app.config["TEACHER_DOMAIN"]:
+        abort(403, "El personal debe utilizar una cuenta corporativa de Google Workspace.")
+    db.session.add(user)
     if user.google_sub is None:
         user.name = str(info.get("name") or user.name)[:120]
     user.google_sub = info["sub"]

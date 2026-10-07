@@ -38,6 +38,20 @@ class Work(db.Model):
     closed = db.Column(db.Boolean, nullable=False, default=False)
     published = db.Column(db.Boolean, nullable=False, default=False)
     teams = db.relationship("Team", backref="work", cascade="all, delete-orphan")
+    reviews = db.relationship("PublicationReview", backref="work", cascade="all, delete-orphan")
+    activity = db.relationship("WorkActivity", uselist=False, cascade="all, delete-orphan")
+
+
+class WorkActivity(db.Model):
+    work_id = db.Column(db.Integer, db.ForeignKey("work.id"), primary_key=True)
+    changed_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+class PublicationReview(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    work_id = db.Column(db.Integer, db.ForeignKey("work.id"), nullable=False)
+    reviewer_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    reviewed_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
 
 class Team(db.Model):

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Privacidad · Coevaluación</title>
+    <style>
+      body { font: 1rem/1.6 system-ui, sans-serif; max-width: 48rem; margin: auto; padding: 1.5rem; color: #172638; background: #fff; }
+      a { color: #0f4285; } h1, h2 { line-height: 1.2; }
+      dd { margin: 0 0 1rem; white-space: pre-line; } dt { font-weight: 600; }
+      .notice { padding: 1rem; border: 2px solid #855800; }
+    </style>
+  </head>
+  <body>
+    <header><a href="/">← Volver a coevaluación</a></header>
+    <main>
+      <h1>Cómo se utilizan tus datos</h1>
+      {% if not (config.PRIVACY_CONTROLLER and config.PRIVACY_CONTACT and config.PRIVACY_LEGAL_BASIS and config.PRIVACY_RETENTION and config.PRIVACY_PROVIDERS) %}
+      <p class="notice">El centro debe completar esta información antes de utilizar la aplicación con datos reales. Consulta al responsable del centro si tienes dudas.</p>
+      {% endif %}
+      <dl>
+        <dt>Responsable del tratamiento</dt>
+        <dd>{{ config.PRIVACY_CONTROLLER or 'Pendiente de indicar por el centro.' }}</dd>
+        <dt>Contacto de privacidad y del delegado de protección de datos</dt>
+        <dd>{{ config.PRIVACY_CONTACT or 'Pendiente de indicar por el centro.' }}</dd>
+        <dt>Finalidad</dt>
+        <dd>Gestionar la autoevaluación y coevaluación de trabajos en equipo, calcular propuestas de notas y permitir su revisión por el profesorado.</dd>
+        <dt>Base jurídica</dt>
+        <dd>{{ config.PRIVACY_LEGAL_BASIS or 'Pendiente de determinar por el centro.' }}</dd>
+        <dt>Datos que utilizamos</dt>
+        <dd>Nombre, correo e identificador de Google, clase, equipos, puntos, notas, comentarios y fechas de evaluación. Se registra quién confirma la revisión antes de publicar. Google verifica tu identidad; esta aplicación no solicita tu contraseña de Google ni acceso a Drive.</dd>
+        <dt>Quién puede verlos</dt>
+        <dd>Puedes consultar tu reparto, tu comentario y tu nota publicada. Tus compañeros ven los nombres del equipo, pero no tus votos, comentarios ni nota individual. El docente responsable y la persona administradora pueden consultar las evaluaciones y descargar informes confidenciales.</dd>
+        <dt>Proveedores, alojamiento y transferencias internacionales</dt>
+        <dd>{{ config.PRIVACY_PROVIDERS or 'Pendiente de detallar por el centro.' }}</dd>
+        <dt>Conservación</dt>
+        <dd>{{ config.PRIVACY_RETENTION or 'Pendiente de fijar por el centro.' }}</dd>
+      </dl>
+      <h2>Qué necesitas aportar</h2>
+      <p>La identidad y el reparto de puntos permiten asignar tu evaluación al equipo. El comentario es opcional. No escribas información sobre salud, vida privada u otras personas que no sea necesaria para explicar el trabajo realizado.</p>
+      <h2>Revisión de resultados y derechos</h2>
+      <p>El cálculo utiliza una fórmula publicada en la aplicación y requiere confirmación de revisión del docente antes de publicar. Si detectas un error o no estás de acuerdo, solicita una revisión al docente. La aplicación no utiliza un servicio de inteligencia artificial para calcular las notas.</p>
+      <p>Puedes dirigirte al contacto indicado para solicitar acceso, rectificación, supresión, limitación, oposición y, cuando corresponda, portabilidad. La procedencia de cada derecho depende del tratamiento y de su base jurídica. También puedes presentar una reclamación ante la <a href="https://www.aepd.es/" rel="noreferrer">Agencia Española de Protección de Datos</a>.</p>
+      <h2>Cookies de sesión</h2>
+      <p>La aplicación usa una cookie necesaria para mantener el acceso y proteger las operaciones. No incorpora cookies publicitarias ni analítica de terceros en sus páginas. El inicio de sesión abre el servicio de Google.</p>
+    </main>
+  </body>
+</html>

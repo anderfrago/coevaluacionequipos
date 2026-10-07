@@ -6,9 +6,20 @@ from functools import wraps
 from flask import Blueprint, abort, current_app, g, jsonify, request
 from sqlalchemy.exc import IntegrityError
 
-from .auth import role_for
+from .auth import role_allowed
 from .grading import results, warnings
-from .models import Classroom, Evaluation, Member, Team, User, Work, db, utcnow
+from .models import (
+    Classroom,
+    Evaluation,
+    Member,
+    PublicationReview,
+    Team,
+    User,
+    Work,
+    WorkActivity,
+    db,
+    utcnow,
+)
 
 api = Blueprint("api", __name__)
 
@@ -54,10 +65,10 @@ def email_value(value):
         len(value) > 254
         or value.count("@") != 1
         or not value.split("@")[0]
+        or "." not in value.rsplit("@", 1)[-1]
         or any(c.isspace() for c in value)
     ):
         abort(400, "Correo no válido.")
-    role_for(value)
     return value
 
 
@@ -86,6 +97,13 @@ def owned(model, item_id):
 def editable(work):
     if work.published:
         abort(409, "Retira la publicación antes de modificar el trabajo.")
+
+
+def touch_work(work):
+    if work.activity is None:
+        work.activity = WorkActivity(changed_at=utcnow())
+    else:
+        work.activity.changed_at = utcnow()
 
 
 def parse_deadline(value):
@@ -229,6 +247,7 @@ def create_work():
         deadline=parse_deadline(data.get("deadline")),
     )
     db.session.add(work)
+    touch_work(work)
     commit()
     return jsonify(id=work.id), 201
 
@@ -245,6 +264,7 @@ def change_work(item_id):
         work.title = text(data, "title", 160)
         work.description = text(data, "description", 4000, True)
         work.deadline = parse_deadline(data.get("deadline"))
+        touch_work(work)
     commit()
     return jsonify(ok=True)
 
@@ -253,13 +273,19 @@ def change_work(item_id):
 @access("teacher", "admin")
 def change_state(item_id):
     work = owned(Work, item_id)
-    action = body().get("action")
+    data = body()
+    action = data.get("action")
     if action == "publish":
         if not work.teams or not all(results(t)["ready"] for t in work.teams):
             abort(
                 409,
                 "Faltan evaluaciones o notas grupales. No se pueden publicar resultados incompletos.",
             )
+        if data.get("reviewed") is not True:
+            abort(400, "Confirma que has revisado los repartos y las notas antes de publicar.")
+        if work.published:
+            abort(409, "El trabajo ya está publicado.")
+        db.session.add(PublicationReview(work_id=work.id, reviewer_id=g.user.id))
         work.closed = True
         work.published = True
     elif action == "unpublish":
@@ -269,6 +295,7 @@ def change_state(item_id):
         work.closed = action == "close"
     else:
         abort(400, "Acción no válida.")
+    touch_work(work)
     commit()
     return jsonify(ok=True)
 
@@ -280,8 +307,8 @@ def set_team(team, data):
     if not isinstance(emails, list) or not 2 <= len(emails) <= 50:
         abort(400, "Incluye entre 2 y 50 integrantes.")
     emails = [email_value(e) for e in emails]
-    if len(set(emails)) != len(emails) or any(role_for(e) != "student" for e in emails):
-        abort(400, "Los integrantes deben ser alumnos gmail.com sin duplicados.")
+    if len(set(emails)) != len(emails) or any(not role_allowed(e, "student") for e in emails):
+        abort(400, "Usa correos de alumnado de los dominios autorizados, sin duplicados.")
     previous = {m.user.email for m in team.members}
     if team.evaluations and previous != set(emails):
         abort(409, "No se pueden cambiar integrantes cuando ya hay evaluaciones.")
@@ -312,6 +339,7 @@ def create_team(item_id):
     db.session.add(team)
     with db.session.no_autoflush:
         set_team(team, body())
+    touch_work(work)
     commit()
     return jsonify(id=team.id), 201
 
@@ -321,6 +349,7 @@ def create_team(item_id):
 def change_team(item_id):
     team = owned(Team, item_id)
     editable(team.work)
+    touch_work(team.work)
     if request.method == "DELETE":
         db.session.delete(team)
     else:
@@ -403,11 +432,10 @@ def users():
 def set_user(user, data):
     email = email_value(data.get("email"))
     role = data.get("role")
-    allowed = role_for(email)
-    if role != allowed:
+    if not role_allowed(email, role):
         abort(
             400,
-            "El rol debe corresponder al dominio; solo la cuenta administradora puede tener ese rol.",
+            "El correo no está permitido para ese rol. Revisa la política de acceso del centro.",
         )
     if type(data.get("active", True)) is not bool:
         abort(400, "El estado activo debe ser booleano.")
@@ -425,6 +453,7 @@ def set_user(user, data):
         if (
             db.session.query(Member).filter_by(user_id=user.id).first()
             or db.session.query(Classroom).filter_by(owner_id=user.id).first()
+            or db.session.query(PublicationReview).filter_by(reviewer_id=user.id).first()
         ):
             abort(409, "No se puede cambiar el rol de un usuario con equipos o clases.")
     user.email = email
@@ -453,6 +482,8 @@ def change_user(item_id):
         referenced = (
             db.session.query(Member).filter_by(user_id=user.id).first()
             or db.session.query(Classroom).filter_by(owner_id=user.id).first()
+            or db.session.query(Evaluation).filter_by(evaluator_id=user.id).first()
+            or db.session.query(PublicationReview).filter_by(reviewer_id=user.id).first()
         )
         if referenced:
             abort(

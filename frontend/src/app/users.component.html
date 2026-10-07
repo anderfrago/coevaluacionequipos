@@ -39,8 +39,8 @@
         /></label>
         <label
           >Rol<select name="role" [(ngModel)]="form.role">
-            <option value="student">Alumno/a · gmail.com</option>
-            <option value="teacher">Docente · cuatrovientos.org</option>
+            <option value="student">Alumno/a · cuenta autorizada</option>
+            <option value="teacher">Docente · cuenta corporativa</option>
             <option value="admin">Administrador · cuenta designada</option>
           </select></label
         >
@@ -49,8 +49,9 @@
           Cuenta activa</label
         >
         <p class="full muted">
-          El rol debe corresponder al dominio. Cambiar el correo permite acceder
-          a este historial desde la nueva cuenta de Google.
+          Elige expresamente el rol. Los dominios admitidos los define el
+          centro. Cambiar el correo permite acceder a este historial desde la
+          nueva cuenta de Google: verifica antes su titularidad.
         </p>
         <div class="full">
           <button class="button" [disabled]="userEditor.invalid || busy()">

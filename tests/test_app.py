@@ -119,7 +119,12 @@ def test_calculation_confidentiality_and_publication(app):
     assert "results" not in before and "evaluations" not in before and "my_result" not in before
     assert before["grade"] is None
     assert all("email" not in m for m in before["members"])
-    assert send(teacher, "POST", f"/works/{work}/state", {"action": "publish"}).status_code == 200
+    assert (
+        send(
+            teacher, "POST", f"/works/{work}/state", {"action": "publish", "reviewed": True}
+        ).status_code
+        == 200
+    )
     after = student.get(f"/api/evaluation/{team['token']}").json["team"]
     assert after["my_result"]["grade"] == 4.67
     assert "results" not in after and "evaluations" not in after
@@ -264,6 +269,8 @@ def test_existing_history_preserved_and_domain_restriction(app):
 
 def test_oauth_verified_identity_and_no_role_escalation(app):
     with app.app_context():
+        db.session.add(User(email="registro@gmail.com", name="Registro", role="student"))
+        db.session.commit()
         user = user_from_identity(
             {
                 "email": "registro@gmail.com",
@@ -289,6 +296,7 @@ def test_oauth_verified_identity_and_no_role_escalation(app):
                 "email": "ander_frago@cuatrovientos.org",
                 "email_verified": True,
                 "sub": "admin-google",
+                "hd": "cuatrovientos.org",
             }
         )
         assert admin.role == "admin"

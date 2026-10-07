@@ -161,14 +161,14 @@ export class DashboardComponent implements OnInit {
     if (
       action === "publish" &&
       !confirm(
-        "¿Cerrar el trabajo y publicar las notas individuales? Cada alumno podrá ver su resultado.",
+        "Confirmo que he revisado los repartos, los comentarios y las notas, y he resuelto las incidencias. ¿Publicar los resultados? Cada alumno podrá consultar su nota y solicitar revisión al docente.",
       )
     )
       return;
     void this.action(
       `/works/${this.selectedId()}/state`,
       "POST",
-      { action },
+      { action, reviewed: action === "publish" },
       "Estado del trabajo actualizado.",
     );
   }

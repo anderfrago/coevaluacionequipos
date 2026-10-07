@@ -4,6 +4,8 @@ Destino previsto: cuenta **coevaluacionequipos**. Este documento prepara una ins
 
 ## 1. Arquitectura
 
+Para actualizar una instalación existente, sigue primero [Privacidad y conservación](PRIVACIDAD_Y_CONSERVACION.md): copia protegida, pausa de escrituras, revisión de usuarios, nuevas variables y creación de tablas adicionales. Usa una cuenta y una región aprobadas por el centro; este manual no acredita esa autorización.
+
 Flask sirve la API y el Angular ya compilado desde el mismo dominio. No hace falta mantener Node ejecutándose en PythonAnywhere. SQLite guarda los datos en `instance/coevaluacion.db`. El acceso usa Google OpenID Connect; las invitaciones se envían por SMTP con STARTTLS.
 
 Las cuentas gratuitas nuevas disponen de espacio y recursos limitados y requieren renovar la aplicación periódicamente; la documentación indica 512 MiB, un worker y un mes de vigencia. No dependemos de MySQL ni de tareas programadas, que ya no se incluyen en las cuentas gratuitas nuevas. [Características del plan gratuito](https://help.pythonanywhere.com/pages/FreeAccountsFeatures/).
@@ -26,7 +28,7 @@ El desarrollo necesita Node compatible con Angular 22 y TypeScript 6.0; las depe
 
 ## 3. Crear la cuenta y subir el proyecto
 
-1. Crea la cuenta gratuita con usuario `coevaluacionequipos`.
+1. Utiliza una cuenta de alojamiento bajo control del centro y en la región aprobada, con usuario `coevaluacionequipos` o el que se asigne. Si se elige región europea, el alta y los dominios corresponden al servicio EU; confirma el dominio real antes de configurar OAuth.
 2. Desde **Files**, sube el ZIP a `/home/coevaluacionequipos/`.
 3. Abre una consola **Bash**.
 
@@ -54,6 +56,14 @@ BASE_URL=https://coevaluacionequipos.pythonanywhere.com
 COOKIE_SECURE=true
 DATABASE_URL=sqlite:////home/coevaluacionequipos/coevaluacion-equipos/instance/coevaluacion.db
 ADMIN_EMAIL=ander_frago@cuatrovientos.org
+TEACHER_DOMAIN=cuatrovientos.org
+STUDENT_DOMAINS=cuatrovientos.org,gmail.com
+RETENTION_DAYS=
+PRIVACY_CONTROLLER=
+PRIVACY_CONTACT=
+PRIVACY_LEGAL_BASIS=
+PRIVACY_RETENTION=
+PRIVACY_PROVIDERS=
 GOOGLE_CLIENT_ID=COMPLETAR_EN_EL_PASO_6
 GOOGLE_CLIENT_SECRET=COMPLETAR_EN_EL_PASO_6
 SMTP_HOST=smtp.gmail.com
@@ -73,7 +83,7 @@ source .venv/bin/activate
 python -m flask --app wsgi:application init-db
 ```
 
-`init-db` crea las tablas iniciales, no elimina datos y no migra esquemas de versiones futuras.
+`init-db` crea tablas que falten sin eliminar datos. En esta actualización añade `publication_review` y `work_activity`; no modifica columnas anteriores ni sirve como migrador genérico para versiones futuras. Completa las variables de privacidad con el texto aprobado antes del uso real.
 
 ## 5. Configurar la aplicación web
 
@@ -113,7 +123,7 @@ Abre el dominio de la aplicación. Debe aparecer la pantalla de acceso. Si muest
 En Google Cloud / Google Auth Platform:
 
 1. Crea un proyecto y configura el nombre de la aplicación, correo de soporte y contacto.
-2. Configura la audiencia como **External**, ya que accederán cuentas Gmail externas al centro.
+2. Configura la audiencia conforme a las identidades autorizadas: si se permite Gmail externo, deberá admitir esas cuentas. Si todo el acceso es corporativo, ajusta la audiencia a ese escenario.
 3. Solicita únicamente los ámbitos básicos `openid`, `email` y `profile`.
 4. Crea un cliente OAuth de tipo **Web application**.
 5. Añade como URI de redirección autorizada:
@@ -127,7 +137,7 @@ https://coevaluacionequipos.pythonanywhere.com/auth/google/callback
 8. Si la configuración de audiencia mantiene restricciones de prueba, añade las cuentas que usarás para probar. Antes de compartirlo con el centro, revisa el estado de publicación y los requisitos que indique Google.
 9. Pulsa **Reload** en PythonAnywhere e inicia sesión con `ander_frago@cuatrovientos.org`.
 
-El backend valida la identidad mediante Authlib y asigna el rol según el correo verificado; un dato enviado desde Angular no puede asignar el rol. El parámetro de dominio de una pantalla de acceso no sustituye la comprobación del servidor. [OpenID Connect de Google](https://developers.google.com/identity/openid-connect/openid-connect).
+El backend valida la identidad mediante Authlib y exige una ficha previa, salvo el alta inicial de la cuenta administradora designada. El rol procede de la ficha autorizada, no del dominio ni del perfil recibido de Google. El personal debe acreditar además el dominio Workspace (`hd`) configurado. El parámetro de dominio de una pantalla de acceso no sustituye la comprobación del servidor. [OpenID Connect de Google](https://developers.google.com/identity/openid-connect/openid-connect).
 
 Las cuentas gratuitas limitan las conexiones salientes. Si el acceso falla por proxy o 403, consulta la lista permitida y comprueba los dominios de descubrimiento y tokens de Google. [Lista de dominios permitidos](https://www.pythonanywhere.com/whitelist/) y [errores de conexión](https://help.pythonanywhere.com/pages/403ForbiddenError/).
 
@@ -198,7 +208,7 @@ Para restaurar una copia, detén/desactiva temporalmente la aplicación desde el
 | Error 500 al iniciar | Revisa el error log de Web; entorno virtual, SECRET_KEY y ruta WSGI |
 | No existe una tabla | Ejecuta `init-db` con el mismo `.env` que usa la web |
 | `redirect_uri_mismatch` | URI exacta en Google, con protocolo, host y `/auth/google/callback` |
-| Acceso rechazado | Cuenta verificada, dominio autorizado, estado activo y política de Google |
+| Acceso rechazado | Cuenta verificada, alta previa, rol, dominio autorizado, estado activo y, para personal, identidad Workspace |
 | Bucle o sesión caducada | HTTPS, COOKIE_SECURE, cookies habilitadas y SECRET_KEY estable |
 | La web muestra código antiguo | Recompila, sube `frontend/dist/coevaluacion/browser` completo y recarga |
 | Envío SMTP fallido | Contraseña de aplicación, puerto 587, remitente y conectividad del plan |

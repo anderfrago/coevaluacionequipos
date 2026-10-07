@@ -63,8 +63,9 @@
           placeholder="Explica el reparto o comparte una reflexión sobre el trabajo en equipo."
         ></textarea
         ><small
-          >Solo tú y el profesorado autorizado podréis leerlo. Máximo 3000
-          caracteres.</small
+          >Visible para ti, el docente responsable y la persona administradora.
+          No incluyas datos de salud ni información privada innecesaria. Máximo
+          3000 caracteres.</small
         ></label
       >
       @if (!locked()) {
@@ -129,6 +130,10 @@
             >{{ result.grade | number: "1.2-2" }} <small>/ 10</small></strong
           >
           <p>{{ result.percentage | number: "1.2-2" }}% de la nota grupal.</p>
+          <p>
+            Si detectas un error o no estás de acuerdo, solicita una revisión al
+            docente.
+          </p>
           @if (result.mh) {
             <span class="badge blue">MH · Matrícula de Honor</span>
           }

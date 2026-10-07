@@ -10,3 +10,4 @@ frontend/.angular/
 frontend/.npm-cache/
 *.zip
 .ruff_cache/
+.tmp/

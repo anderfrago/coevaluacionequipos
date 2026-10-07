@@ -4,8 +4,9 @@ Aplicación web con Flask y Angular 22 para autoevaluación y coevaluación conf
 
 ## Funcionalidades
 
-- Registro e inicio de sesión con Google, con correo verificado.
-- Alumnado: cuentas `gmail.com`. Profesorado: cuentas `cuatrovientos.org`.
+- Inicio de sesión con Google y correo verificado, sin registro libre.
+- Profesorado: alta explícita por administración y cuenta Workspace del dominio configurado.
+- Alumnado: alta por administración o inclusión en un equipo; dominios configurables. El dominio no asigna el rol.
 - Administrador inicial: `ander_frago@cuatrovientos.org`.
 - CRUD de usuarios por el administrador; desactivación para conservar historial.
 - Clases, trabajos con fecha límite, equipos de 2 a 50 integrantes y nota grupal por equipo.
@@ -15,6 +16,15 @@ Aplicación web con Flask y Angular 22 para autoevaluación y coevaluación conf
 - Revisión confidencial por el docente responsable y el administrador.
 - Cierre, reapertura, publicación y retirada de resultados.
 - Exportación XLSX con hojas de resultados, repartos y criterios.
+- Aviso público de privacidad configurable en `/privacidad`.
+- Confirmación docente registrada antes de publicar notas.
+- Conservación configurable, vista previa y supresión de trabajos seleccionados mediante consola.
+
+## Actualización de privacidad y acceso
+
+Consulta [la guía de actualización y conservación](docs/PRIVACIDAD_Y_CONSERVACION.md) antes de actualizar una instalación existente. Hay dos tablas nuevas que se añaden con `init-db`, sin borrar las anteriores. Revisa las cuentas ya existentes, configura los dominios y completa la información institucional. El plazo de conservación se deja sin definir hasta que lo establezca el centro; no se ha instalado un borrado automático.
+
+Estos controles técnicos no sustituyen la autorización del centro, los contratos con proveedores ni la evaluación del DPD.
 
 ## Reglas de cálculo
 
