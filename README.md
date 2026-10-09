@@ -2,6 +2,40 @@
 
 Aplicación web con Flask y Angular 22 para autoevaluación y coevaluación confidencial de trabajos en equipo. Interfaz en español, fondo blanco, color principal `#0f4285` y tipografía Segoe UI. Los componentes Angular y los correos tienen sus plantillas HTML en archivos separados. El código fuente conserva formato y saltos de línea; solo la distribución de producción se minifica.
 
+## Adecuación al RGPD
+
+Documentación revisada el 9 de octubre de 2026 a partir de los diagramas del informe inicial y del código actual. Describe las medidas implementadas; la configuración y autorización de producción deben comprobarse aparte.
+
+La aplicación incorpora identidad Google verificada, altas y roles explícitos, permisos por clase y equipo y confirmación docente registrada antes de publicar resultados. El dominio no asigna permisos por sí solo. La conservación de trabajos cerrados es configurable: la supresión requiere superar el plazo desde la última actividad, revisar la vista previa, seleccionar los trabajos y ejecutar expresamente el borrado. Las cuentas, exportaciones y copias requieren revisión separada.
+
+Estos controles apoyan la adecuación al RGPD, pero no acreditan por sí solos el cumplimiento ni sustituyen la autorización del centro. Antes del uso con datos reales deben verificarse en el despliegue, completar la información de privacidad, revisar proveedores y condiciones de tratamiento y aprobar la conservación y el borrado, incluidas copias y exportaciones.
+
+La página `/privacidad` muestra `PRIVACY_CONTROLLER`, `PRIVACY_CONTACT`, `PRIVACY_LEGAL_BASIS`, `PRIVACY_RETENTION` y `PRIVACY_PROVIDERS`, configuradas en el `.env` de cada despliegue (`backend/.env` en Generador de equipos). `PRIVACY_RETENTION` es texto informativo y no activa el borrado. Consulta los plazos y comandos operativos en la guía específica.
+
+[Guía de privacidad](docs/PRIVACIDAD_Y_CONSERVACION.md) · [Web](https://coevaluacionequipos.eu.pythonanywhere.com/).
+
+El enlace utiliza el nuevo dominio europeo. La migración está en curso según la información disponible; debe confirmarse su finalización, la versión desplegada y el tratamiento de las copias del alojamiento anterior. Alojar en Europa no determina dónde procesan los datos otros proveedores.
+
+## Flujo de funcionamiento y datos
+
+```mermaid
+flowchart TD
+    U["Usuarios dados de alta y roles asignados"] --> G["Google: identidad verificada"]
+    G --> F["Flask: sesión y permisos por clase y equipo"]
+    F --> E["Alumnado: puntos y comentarios de su equipo"]
+    E --> B["SQLite: usuarios, clases, trabajos y evaluaciones"]
+    B --> T["Docente responsable o administración: cálculo y revisión"]
+    T --> V["Confirmación docente con autor y fecha"]
+    V --> P["Publicación: cada alumno consulta su resultado"]
+    T --> X["Exportación XLSX autorizada"]
+    B --> C["Trabajo cerrado y última actividad fuera del plazo aprobado"]
+    C --> R["Vista previa, selección y ejecución expresa"]
+    R --> D["Supresión del trabajo, equipos, evaluaciones y revisiones"]
+```
+
+Los pasos de conservación representan una operación de mantenimiento que debe configurarse y ejecutarse; no un borrado automático por el mero transcurso del plazo.
+
+
 ## Funcionalidades
 
 - Inicio de sesión con Google y correo verificado, sin registro libre.
