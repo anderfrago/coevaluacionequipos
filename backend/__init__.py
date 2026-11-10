@@ -47,6 +47,7 @@ def create_app(test_config=None):
         PRIVACY_PROVIDERS=os.getenv("PRIVACY_PROVIDERS", ""),
         GOOGLE_CLIENT_ID=os.getenv("GOOGLE_CLIENT_ID", ""),
         GOOGLE_CLIENT_SECRET=os.getenv("GOOGLE_CLIENT_SECRET", ""),
+        COLAB_DEMO_MODE=os.getenv("COLAB_DEMO_MODE", "false").lower() == "true",
         SMTP_HOST=os.getenv("SMTP_HOST", "smtp.gmail.com"),
         SMTP_PORT=int(os.getenv("SMTP_PORT", "587")),
         SMTP_USERNAME=os.getenv("SMTP_USERNAME", ""),

@@ -304,6 +304,34 @@ def test_oauth_verified_identity_and_no_role_escalation(app):
     assert response.status_code == 302 and "configuration" in response.location
 
 
+def test_demo_login_is_disabled_by_default(app):
+    client = app.test_client()
+    assert client.get("/auth/demo").status_code == 404
+    assert client.get("/api/session").json["demoMode"] is False
+
+
+def test_demo_login_creates_an_admin_session():
+    demo_app = create_app(
+        {
+            "TESTING": True,
+            "SECRET_KEY": "test-only-secret-with-at-least-32-characters",
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "SESSION_COOKIE_SECURE": False,
+            "COLAB_DEMO_MODE": True,
+            "ADMIN_EMAIL": "demo@example.org",
+        }
+    )
+    with demo_app.app_context():
+        db.create_all()
+    client = demo_app.test_client()
+    response = client.get("/auth/demo")
+    assert response.status_code == 302 and response.location == "/"
+    session_data = client.get("/api/session").json
+    assert session_data["demoMode"] is True
+    assert session_data["user"]["email"] == "demo@example.org"
+    assert session_data["user"]["role"] == "admin"
+
+
 def test_mail_configuration_and_individual_recipients(app):
     teacher, _, team = setup_team(app)
     app.config.update(SMTP_USERNAME="", SMTP_PASSWORD="", MAIL_FROM="")

@@ -83,6 +83,28 @@ def login():
     return current_app.extensions["google_oauth"].google.authorize_redirect(callback)
 
 
+@auth.get("/auth/demo")
+def demo_login():
+    """Acceso sin proveedor externo, disponible solo al activarlo expresamente."""
+    if not current_app.config["COLAB_DEMO_MODE"]:
+        abort(404)
+    email = current_app.config["ADMIN_EMAIL"]
+    user = db.session.execute(db.select(User).filter_by(email=email)).scalar_one_or_none()
+    if user is None:
+        user = User(email=email, name="Administrador de demostración", role="admin")
+        db.session.add(user)
+        db.session.commit()
+    if not user.active or user.role != "admin":
+        abort(409, "La cuenta configurada para la demostración no es administradora activa.")
+    session.clear()
+    session["user_id"] = user.id
+    session["auth_version"] = user.auth_version
+    session["csrf"] = secrets.token_urlsafe(32)
+    session["demo_mode"] = True
+    session.permanent = True
+    return redirect("/")
+
+
 @auth.get("/auth/google/callback")
 def callback():
     try:
@@ -108,7 +130,11 @@ def callback():
 def current_session():
     if "csrf" not in session:
         session["csrf"] = secrets.token_urlsafe(32)
-    return jsonify(user=g.user.public() if g.user else None, csrf=session["csrf"])
+    return jsonify(
+        user=g.user.public() if g.user else None,
+        csrf=session["csrf"],
+        demoMode=current_app.config["COLAB_DEMO_MODE"],
+    )
 
 
 @auth.post("/api/logout")

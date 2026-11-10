@@ -7,14 +7,18 @@ export class ApiService {
   ready = signal(false);
   error = signal("");
   notice = signal("");
+  demoMode = signal(false);
   private csrf = "";
 
   async session(): Promise<void> {
     try {
-      const result = await this.get<{ user: User | null; csrf: string }>(
-        "/session",
-      );
+      const result = await this.get<{
+        user: User | null;
+        csrf: string;
+        demoMode: boolean;
+      }>("/session");
       this.user.set(result.user);
+      this.demoMode.set(result.demoMode);
       this.csrf = result.csrf;
       this.ready.set(true);
     } catch (error) {

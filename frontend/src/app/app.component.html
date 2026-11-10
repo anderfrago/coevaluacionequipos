@@ -31,6 +31,12 @@
   }
 </header>
 <main id="main" class="shell">
+  @if (api.demoMode()) {
+    <div class="demo-banner" role="status">
+      Modo de demostración: acceso sin Google. No introduzcas datos personales o
+      información real.
+    </div>
+  }
   @if (api.error()) {
     <div class="message error" role="alert">
       {{ api.error()
@@ -98,7 +104,13 @@
       <section class="login-card" aria-labelledby="access-title">
         <span class="eyebrow">TU ESPACIO DE EVALUACIÓN</span>
         <h2 id="access-title">Bienvenido/a</h2>
-        <p>Accede con tu cuenta de Google para ver tus trabajos.</p>
+        <p>
+          {{
+            api.demoMode()
+              ? "Entra en el entorno temporal de demostración."
+              : "Accede con tu cuenta de Google para ver tus trabajos."
+          }}
+        </p>
         @if (authError) {
           <div class="message error" role="alert">
             {{
@@ -108,20 +120,29 @@
             }}
           </div>
         }
-        <a class="button google-button" [href]="loginUrl"
-          ><span aria-hidden="true">G</span> Continuar con Google
+        <a
+          class="button google-button"
+          [href]="api.demoMode() ? '/auth/demo' : loginUrl"
+          ><span aria-hidden="true">{{ api.demoMode() ? "D" : "G" }}</span>
+          {{
+            api.demoMode()
+              ? "Entrar en la demostración"
+              : "Continuar con Google"
+          }}
           <span aria-hidden="true">→</span></a
         >
-        <div class="access-domains">
-          <p>
-            <strong>Alumnado</strong> Usa la cuenta que tu docente ha
-            autorizado.
-          </p>
-          <p>
-            <strong>Profesorado</strong> Cuenta corporativa dada de alta por
-            administración.
-          </p>
-        </div>
+        @if (!api.demoMode()) {
+          <div class="access-domains">
+            <p>
+              <strong>Alumnado</strong> Usa la cuenta que tu docente ha
+              autorizado.
+            </p>
+            <p>
+              <strong>Profesorado</strong> Cuenta corporativa dada de alta por
+              administración.
+            </p>
+          </div>
+        }
         <p class="privacy-note">
           Tu reparto y comentario son visibles para ti, el docente responsable y
           la persona administradora.
