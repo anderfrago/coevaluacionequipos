@@ -120,6 +120,10 @@ wsgi.py                   Punto de entrada de producción
 
 Consulta [el manual de PythonAnywhere](docs/DESPLIEGUE_PYTHONANYWHERE.md) y [el manual de uso](docs/MANUAL_USUARIO.md).
 
+Para demostraciones o pruebas también se puede ejecutar desde
+[Google Colab](docs/COLAB.md) con el notebook `colab/coevaluacion_colab.ipynb`. Colab no
+sustituye un despliegue permanente.
+
 ```powershell
 .venv/Scripts/python.exe scripts/package.py
 ```
